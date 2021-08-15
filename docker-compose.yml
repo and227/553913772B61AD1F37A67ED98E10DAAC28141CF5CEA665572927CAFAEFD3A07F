@@ -76,21 +76,6 @@ services:
       - highcharts
       - celery
 
-  tests:
-    build:
-      dockerfile: tests.Dockerfile
-      context: .
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-      - rabbitmq
-      - highcharts
-      - app
-      - celery
-    profiles: ["test"]
-
 volumes:
   pgdata:
   redisdata:
