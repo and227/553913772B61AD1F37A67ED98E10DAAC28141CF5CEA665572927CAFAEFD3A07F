@@ -1,0 +1,96 @@
+version: '3.3'
+
+services:
+  db:
+    image: postgres:latest
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+
+  redis:
+    image: redis:latest
+    env_file:
+      - .env
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes: 
+      - 'redisdata:${REDIS_DATA}'
+
+  rabbitmq:
+    image: rabbitmq:latest
+    env_file:
+      - .env
+    ports:
+      - "${RABBITMQ_AMQP_PORT}:5672"
+      - "${RABBITMQ_HTTP_PORT}:15672"
+
+  highcharts:
+    image: onsdigital/highcharts-export-node
+    ports:
+      - "${HIGHCHARTS_PORT}:8080"
+
+  celery:
+    build:
+      dockerfile: celery.Dockerfile
+      context: .
+    command: celery -A celery_proj worker -l INFO
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: ./math_charts
+        target: /app
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+
+  app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: charts-application
+    command: [
+      "./wait-for-it.sh",
+      "db:5432",
+      "--timeout=5",
+      "--",
+      "python3",
+      "math_charts/manage.py",
+      "runserver",
+      "0.0.0.0:8000"
+      ]
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    ports:
+      - "${APP_PORT}:8000"
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - highcharts
+      - celery
+
+  tests:
+    build:
+      dockerfile: tests.Dockerfile
+      context: .
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - highcharts
+      - app
+      - celery
+    profiles: ["test"]
+
+volumes:
+  pgdata:
+  redisdata:
