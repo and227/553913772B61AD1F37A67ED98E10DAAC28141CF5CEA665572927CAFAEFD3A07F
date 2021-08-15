@@ -12,7 +12,7 @@ from celery_proj import tasks
 
 @admin.register(Chart)
 class ChartAdmin(ModelAdmin):
-    list_display = ('id', 'function_string', 'image_tag', 'day_interval', 'hour_step', 'date_process')
+    list_display = ('function_string', 'image_tag', 'day_interval', 'hour_step', 'date_process')
     fields = ('function_string', 'day_interval', 'hour_step')
 
     def image_tag(self, obj):
